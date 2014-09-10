@@ -3,51 +3,42 @@
       (mapcan #'flatten x)
       (list x)))
 
-(defun lambda-macro-var-p (x)
-  (and (symbolp x)
-    (let ((name (symbol-name x)))
+(defun hash-keys (hash-table)
+  (loop for key being the hash-keys of hash-table collect key))
+
+(defun lambda-macro-var-p (thing)
+  (and (symbolp thing)
+    (let ((name (symbol-name thing)))
       (and (char= #\% (aref name 0))
-           (every #'identity (mapcar #'digit-char-p (coerce (subseq name 1) 'list)))))))
+           (every #'digit-char-p (coerce (subseq name 1) 'list))))))
 
-(defun lambda-macro-reader (stream junk); junk)
-  (let* ((body (read stream t nil t))
-         (flat-code (flatten body))
-         (vars '()))
-    (dolist (x flat-code)
-      (if (and (lambda-macro-var-p x)
-               (not (member x vars)))
-        (push x vars)))
-     (let* ((names
-       (mapcar #'cadr
-         (sort
-           (mapcar (lambda (x)
-                     (list
-                       (read-from-string
-                         (let ((num-str
-                                (subseq (symbol-name x) 1)))
-                           (if (string= num-str "")
-                               "1"
-                               num-str)))
-                       x))
-                   vars)
-           (lambda (a b) (< (car a) (car b))))))
-           (gensyms
-             (mapcar
-               (lambda (x)
-                 (gensym
-                   (concatenate 'string
-                                "["
-                                (symbol-name x)
-                                "]")))
-               names))
-           (mapping (mapcar
-                      (lambda (a b) `(,a ,b))
-                      names
-                      gensyms))
+(defun name-number-value (sym)
+  (let ((num-str (subseq (symbol-name sym) 1)))
+    (read-from-string
+      (if (string= num-str "")
+          "1"
+          num-str))))
+
+(defun lambda-macro-reader (stream junk); junk
+  (let ((body (read stream t nil t))
+        (vars (make-hash-table :test #'eq)))
+    (mapcar (lambda (x)
+              (when (and (lambda-macro-var-p x)
+                         (not (gethash x vars)))
+                      (setf (gethash x vars)
+                            (gensym
+                              (concatenate 'string
+                                "[" (symbol-name x) "]")))))
+            (flatten body))
+    (let* ((names (mapcar (lambda (x) (gethash x vars))
+                          (sort (hash-keys vars)
+                                (lambda (a b)
+                                  (< (name-number-value a)
+                                     (name-number-value b))))))
            (code `(lambda ,names ,body)))
-       (dolist (association mapping code)
-          (nsubst (cadr association) (car association) code)))))
-
+      (dolist (name (hash-keys vars) code)
+        (nsubst (gethash name vars) name code)))))
+                               
 ;this may be desirable to avoid reader macro conflict
 ;(set-dispatch-macro-character
   ;#\# #\%
