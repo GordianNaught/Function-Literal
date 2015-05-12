@@ -26,7 +26,7 @@ will show up on a REPL like:
       (* 2 ((LAMBDA (#:[%]3234) (* #:[%]3234 #:[%]3234)) #:[%]3235))>
 
 Note also that Let over Lambda's sharp backquote is a natural
-consequence of this read macro as can be seen below. The only difference is the `f' after the `#' to prevent a conflict with Common Lisp's built in vector read-macro.
+consequence of this read macro as can be seen below. The only difference is the `f` after the `#` to prevent a conflict with Common Lisp's built in vector read-macro.
 
     (mapcar #f`(,% ,%) '(A B C))
 
