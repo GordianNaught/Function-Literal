@@ -19,7 +19,7 @@ these can be nested freely, as in:
     ; function that doubles the squared value
     #f(* 2 (#f(* % %) %))
 
-Note also that Let over Lambda's sharp backquote is a natural
+Note also that *Let over Lambda's* `Sharp Backquote` is a natural
 consequence of this read macro as can be seen below. The only difference is the `f` after the `#` to prevent a conflict with Common Lisp's built in vector read-macro.
 
     (mapcar #f`(,% ,%) '(A B C))
